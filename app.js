@@ -3,6 +3,8 @@ import express from "express";
 import morgan from "morgan";
 import cors from "cors";
 
+import authMiddleware from "./middlevare/auth.js";
+import authRouter from "./routes/authRouter.js";
 import contactsRouter from "./routes/contactsRouter.js";
 import "./db.js";
 
@@ -12,7 +14,8 @@ app.use(morgan("tiny"));
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/contacts", contactsRouter);
+app.use("/users", authRouter)
+app.use("/api/contacts", authMiddleware, contactsRouter);
 
 app.use((_, res) => {
   res.status(404).json({ message: "Route not found" });
