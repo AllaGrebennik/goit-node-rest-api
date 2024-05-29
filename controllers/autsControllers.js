@@ -1,5 +1,9 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import * as fs from "node:fs/promises";
+import path from "node:path";
+import gravatar from "gravatar";
+import Jimp from "jimp";
 import User from "../models/user.js";
 import { createUserSchema, changeSubscriptionSchema } from "../schemas/authSchemas.js";
 import HttpError from "../helpers/HttpError.js";
@@ -21,12 +25,18 @@ export const register = async (req, res, next) => {
         };
 
         const passwordHash = await bcrypt.hash(password, 10);
+        const avatar = gravatar.url(email);
 
-        const newUser = await User.create({email: emailInLowerCase, password: passwordHash});
+        const newUser = await User.create({
+            email: emailInLowerCase,
+            password: passwordHash,
+            avatarURL: avatar
+        });
         res.status(201).json({
             "user": {
                 email: newUser.email,
-                subscription: newUser.subscription
+                subscription: newUser.subscription,
+                avatarURL: newUser.avatarURL
             }
         });
     }
@@ -118,6 +128,48 @@ export const updateSubscription = async (req, res, next) => {
         res.status(200).json({
             email: user.email,
             subscription: user.subscription
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+
+
+export const getAvatar = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id)
+        if (user === null) {
+            throw HttpError(401);
+        };
+
+        if (user.avatarURL === null) {
+            throw HttpError(404, "Avatar not found");
+        }
+        res.status(200).sendfile(path.resolve("public", "avatars", user.avatarURL));
+    }
+    catch (error) {
+        next(error);
+    }
+};
+
+export const uploadAvatar = async (req, res, next) => {
+    try {
+        if (req.file === undefined)
+            throw HttpError(400);
+        
+        const userAvatar = await Jimp.read(req.file.path);
+        await userAvatar.cover(250, 250).writeAsync(req.file.path);
+
+        await fs.rename(req.file.path, path.resolve("public", "avatars", req.file.filename));
+        const avatarURL = path.join("avatars", req.file.filename);
+
+        const user = await User.findByIdAndUpdate(req.user.id, { avatarURL }, { new: true });
+        if (user === null) {
+            throw HttpError(401, "Not authorized");
+        }
+        res.status(200).json({
+            avatarURL: user.avatarURL
         });
     }
     catch (error) {

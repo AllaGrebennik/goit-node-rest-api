@@ -4,9 +4,12 @@ import {
   login,
   logout,
   currentUser,
-  updateSubscription
+  updateSubscription,
+  getAvatar,
+  uploadAvatar
 } from "../controllers/autsControllers.js";
 import authMiddleware from "../middlevare/auth.js";
+import uploadMiddleware from "../middlevare/upload.js";
 
 const router = express.Router();
 
@@ -15,5 +18,7 @@ router.post("/login", login);
 router.post("/logout", authMiddleware, logout);
 router.get("/current", authMiddleware, currentUser);
 router.post("/", authMiddleware, updateSubscription);
+router.get("/avatars", authMiddleware, getAvatar);
+router.patch("/avatars", authMiddleware, uploadMiddleware.single("avatar"), uploadAvatar);
 
 export default router;
