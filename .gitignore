@@ -1,7 +1,8 @@
 tmp/*
-!tmp/ .gitkeep
+!tmp/.gitkeep
+
 public/avatars/*
-!public/avatars/ .gitkeep
+!public/avatars/.gitkeep
 
 .idea
 .vscode
